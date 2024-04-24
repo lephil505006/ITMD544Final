@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" 
+  url      = env("DATABASE_URL") 
+}
+
+model Emoji {
+  emoji_id      Int      @id @default(autoincrement())
+  name          String
+  category      String
+  emoji_group   String
+  html_code     String
+  unicode       String
+  like_count    Int      @default(0)
+  dislike_count Int      @default(0)
+  emoji_usage   EmojiUsage[]
+  emoji_reactions EmojiReaction[]
+}
+
+model EmojiUsage {
+  emoji_id      Int      @unique
+  usage_count   Int      @default(0)
+  last_used_at  DateTime @default(now())
+  Emoji         Emoji    @relation(fields: [emoji_id], references: [emoji_id])
+
+  @@index([emoji_id], name: "emojiUsage_emoji_idx")
+}
+
+model EmojiReaction {
+  reaction_id   Int      @id @default(autoincrement())
+  emoji_id      Int
+  session_id    String
+  reaction_type ReactionType
+  created_at    DateTime @default(now())
+  Emoji         Emoji    @relation(fields: [emoji_id], references: [emoji_id])
+
+  @@index([emoji_id], name: "emojiReaction_emoji_idx")
+}
+
+enum ReactionType {
+  like
+  dislike
+}
