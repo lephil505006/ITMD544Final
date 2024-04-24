@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const port = 3000;
 const { PrismaClient } = require("@prisma/client");
+const fetch = require("node-fetch");
 const prisma = new PrismaClient();
 
 app.use(express.json());
@@ -18,27 +19,35 @@ app.get("/emojis", async (req, res) => {
   }
 });
 
-const pool = mysql.createPool({
-  host: "127.0.0.1",
-  user: "root",
-  password: "1234",
-  database: "itmd544f",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+async function getRandomEmoji() {
+  try {
+    const response = await fetch("https://emojihub.yurace.pro/api/random");
+    const emoji = await response.json();
+    return emoji;
+  } catch (error) {
+    console.error("Failed to fetch random emoji:", error);
+  }
+}
 
-pool
-  .getConnection()
-  .then((connection) => {
-    console.log("Connected to MySQL database!");
-    connection.release();
-  })
-  .catch((err) => {
-    console.error("Error connecting to MySQL database:", err);
-  });
+app.get("/random-emoji", async (req, res) => {
+  try {
+    const emoji = await getRandomEmoji();
+    if (emoji) {
+      res.json(emoji);
+    } else {
+      res.status(404).send("No random emoji found");
+    }
+  } catch (error) {
+    console.error("Error in fetching random emoji:", error);
+    res.status(500).send("Server error in fetching random emoji");
+  }
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
