@@ -5,14 +5,25 @@ document
       const response = await fetch("/random-emoji");
       const emojiData = await response.json();
       if (response.ok) {
-        // Assuming emojiData.htmlCode is a string and not an array
-        document.getElementById("emojiDisplay").innerHTML = emojiData.htmlCode;
+        const emojiHtml = emojiData.htmlCode[0];
+        document.getElementById("emojiDisplay").innerHTML = emojiHtml;
         document
           .getElementById("emojiDisplay")
-          .setAttribute("data-current-emoji", emojiData.htmlCode);
-        document
-          .getElementById("emojiDisplay")
-          .setAttribute("data-current-name", emojiData.name);
+          .setAttribute("data-current-emoji", emojiHtml);
+
+        await fetch("/save-emoji", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: emojiData.name,
+            htmlCode: emojiHtml,
+            unicode: emojiData.unicode,
+            category: emojiData.category,
+            group: emojiData.group,
+          }),
+        });
       } else {
         document.getElementById("emojiDisplay").textContent =
           "Failed to fetch random emoji";

@@ -43,6 +43,74 @@ app.get("/random-emoji", async (req, res) => {
   }
 });
 
+app.post("/save-emoji", async (req, res) => {
+  const { name, htmlCode, unicode, category, group } = req.body;
+
+  try {
+    const emoji = await prisma.emoji.create({
+      data: {
+        name,
+        html_code: htmlCode,
+        unicode: unicode.join(" "),
+        category,
+        group,
+      },
+    });
+    res.status(201).json(emoji);
+  } catch (err) {
+    console.error("Error saving emoji:", err);
+    res.status(500).send("Error saving emoji");
+  }
+});
+
+app.post("/emoji-reaction", async (req, res) => {
+  const { emojiHtml, reactionType } = req.body;
+
+  try {
+    // Find the emoji in the database by its HTML code
+    const emoji = await prisma.emoji.findUnique({
+      where: {
+        html_code: emojiHtml,
+      },
+    });
+
+    if (!emoji) {
+      return res.status(404).send("Emoji not found");
+    }
+
+    if (reactionType === "like") {
+      await prisma.emoji.update({
+        where: {
+          emoji_id: emoji.emoji_id,
+        },
+        data: {
+          like_count: {
+            increment: 1,
+          },
+        },
+      });
+    } else if (reactionType === "dislike") {
+      await prisma.emoji.update({
+        where: {
+          emoji_id: emoji.emoji_id,
+        },
+        data: {
+          dislike_count: {
+            increment: 1,
+          },
+        },
+      });
+    } else {
+      return res.status(400).send("Invalid reaction type");
+    }
+
+    res.status(200).json({ message: "Reaction recorded successfully" });
+  } catch (err) {
+    console.error("Error recording emoji reaction:", err);
+    res.status(500).send("Error recording reaction");
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");

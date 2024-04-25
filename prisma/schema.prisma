@@ -11,7 +11,7 @@ model Emoji {
   emoji_id      Int      @id @default(autoincrement())
   name          String
   category      String
-  emoji_group   String
+  group         String
   html_code     String
   unicode       String
   like_count    Int      @default(0)
