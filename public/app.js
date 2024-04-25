@@ -30,7 +30,6 @@ document
 
         if (saveResponse.ok) {
           const savedEmoji = await saveResponse.json();
-          // Call to update usage only if the emoji has been successfully saved
           const usageUpdated = await updateEmojiUsage(savedEmoji.emoji_id);
           console.log("Usage updated:", usageUpdated);
         }
@@ -92,14 +91,16 @@ async function sendEmojiReaction(emojiHtml, reactionType) {
     });
 
     if (!response.ok) {
-      const errorResponse = await response.text();
-      throw new Error("Failed to send reaction: " + errorResponse);
+      const errorText = await response.text();
+      throw new Error(`Failed to send reaction: ${errorText}`);
     }
 
     const data = await response.json();
     console.log("Reaction sent successfully:", data.message);
 
-    updateEmojiUsage(data.emoji_id);
+    if (data.emojiId) {
+      updateEmojiUsage(data.emojiId);
+    }
   } catch (error) {
     console.error("Error sending reaction:", error.message);
   }
@@ -113,9 +114,14 @@ async function updateEmojiUsage(emojiId) {
       body: JSON.stringify({ emojiId }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update usage: ${errorText}`);
+    }
+
     const data = await response.json();
     console.log("Usage updated:", data);
   } catch (error) {
-    console.error("Error updating usage:", error);
+    console.error("Error updating usage:", error.message);
   }
 }
