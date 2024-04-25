@@ -7,10 +7,16 @@ const fetch = require("node-fetch");
 const prisma = new PrismaClient();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 require("dotenv").config();
 
 app.use(express.json());
 app.use(express.static("public"));
+
+app.get("/", (req, res) => {
+  console.log("Serving login.html");
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
 
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
