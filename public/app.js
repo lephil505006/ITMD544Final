@@ -44,6 +44,13 @@ document
     }
   });
 
+function getSessionIdFromCookie() {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; sessionId=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return "defaultSessionId";
+}
+
 function addEmojiToReactionList(emojiHtml, emojiName, reactionType) {
   const list = document.getElementById("reactions");
   const listItem = document.createElement("li");
@@ -51,56 +58,45 @@ function addEmojiToReactionList(emojiHtml, emojiName, reactionType) {
   list.appendChild(listItem);
 }
 
-// Client-side code
 document.getElementById("like").addEventListener("click", function () {
   const emojiHtml = document
     .getElementById("emojiDisplay")
     .getAttribute("data-current-emoji");
-
+  const sessionId = getSessionIdFromCookie();
   if (!emojiHtml) {
     console.error("Emoji HTML is missing.");
     return;
   }
-
-  sendEmojiReaction(emojiHtml, "like").then(() => {
-    addEmojiToReactionList(emojiHtml, "Liked");
-  });
+  sendEmojiReaction(emojiHtml, "like", sessionId);
 });
 
 document.getElementById("dislike").addEventListener("click", function () {
   const emojiHtml = document
     .getElementById("emojiDisplay")
     .getAttribute("data-current-emoji");
-
+  const sessionId = getSessionIdFromCookie();
   if (!emojiHtml) {
     console.error("Emoji HTML is missing.");
     return;
   }
-
-  sendEmojiReaction(emojiHtml, "dislike").then(() => {
-    addEmojiToReactionList(emojiHtml, "Disliked");
-  });
+  sendEmojiReaction(emojiHtml, "dislike", sessionId);
 });
 
-async function sendEmojiReaction(emojiHtml, reactionType) {
+async function sendEmojiReaction(emojiHtml, reactionType, sessionId) {
   try {
     const response = await fetch("/emoji-reaction", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emojiHtml, reactionType }),
+      body: JSON.stringify({ emojiHtml, reactionType, sessionId }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to send reaction: ${errorText}`);
+      const errorResponse = await response.text();
+      throw new Error("Failed to send reaction: " + errorResponse);
     }
 
     const data = await response.json();
     console.log("Reaction sent successfully:", data.message);
-
-    if (data.emojiId) {
-      updateEmojiUsage(data.emojiId);
-    }
   } catch (error) {
     console.error("Error sending reaction:", error.message);
   }

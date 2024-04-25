@@ -69,7 +69,7 @@ app.post("/save-emoji", async (req, res) => {
 });
 
 app.post("/emoji-reaction", async (req, res) => {
-  const { emojiHtml, reactionType } = req.body;
+  const { emojiHtml, reactionType, sessionId } = req.body;
 
   try {
     const emoji = await prisma.emoji.findUnique({
@@ -80,21 +80,18 @@ app.post("/emoji-reaction", async (req, res) => {
       return res.status(404).send("Emoji not found");
     }
 
-    const updatedEmoji = await prisma.emoji.update({
-      where: { emoji_id: emoji.emoji_id },
-      data:
-        reactionType === "like"
-          ? { like_count: { increment: 1 } }
-          : { dislike_count: { increment: 1 } },
+    const newReaction = await prisma.emojiReaction.create({
+      data: {
+        emoji_id: emoji.emoji_id,
+        session_id: sessionId || "defaultSession",
+        reaction_type: reactionType,
+        created_at: new Date(),
+      },
     });
 
-    // Update usage after recording a reaction
-    const usageUpdate = await updateEmojiUsage(emoji.emoji_id);
-    console.log("Usage Updated after reaction:", usageUpdate);
-
     res
-      .status(200)
-      .json({ message: "Reaction recorded successfully", updatedEmoji });
+      .status(201)
+      .json({ message: "Reaction recorded successfully", newReaction });
   } catch (err) {
     console.error("Error recording emoji reaction:", err);
     res.status(500).send("Error recording reaction");
