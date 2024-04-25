@@ -5,9 +5,70 @@ const port = 3000;
 const { PrismaClient } = require("@prisma/client");
 const fetch = require("node-fetch");
 const prisma = new PrismaClient();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 app.use(express.json());
 app.use(express.static("public"));
+
+app.post("/register", async (req, res) => {
+  const { email, password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+      },
+    });
+    res.status(201).json({ message: "User created successfully", user });
+  } catch (error) {
+    res.status(500).send("User registration failed.");
+  }
+});
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+
+      res.json({ message: "Login successful", token });
+    } else {
+      res.status(401).send("Authentication failed");
+    }
+  } catch (error) {
+    res.status(500).send("Login failed.");
+  }
+});
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, "process.env.JWT_SECRET", (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+app.get("/protected", authenticateToken, (req, res) => {
+  res.json({ message: "Access to protected data", user: req.user });
+});
 
 app.get("/emojis", async (req, res) => {
   try {
