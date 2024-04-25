@@ -10,8 +10,11 @@ document
         document
           .getElementById("emojiDisplay")
           .setAttribute("data-current-emoji", emojiHtml);
+        document
+          .getElementById("emojiDisplay")
+          .setAttribute("data-current-name", emojiData.name);
 
-        await fetch("/save-emoji", {
+        const saveResponse = await fetch("/save-emoji", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -24,6 +27,13 @@ document
             group: emojiData.group,
           }),
         });
+
+        if (saveResponse.ok) {
+          const savedEmoji = await saveResponse.json();
+          // Call to update usage only if the emoji has been successfully saved
+          const usageUpdated = await updateEmojiUsage(savedEmoji.emoji_id);
+          console.log("Usage updated:", usageUpdated);
+        }
       } else {
         document.getElementById("emojiDisplay").textContent =
           "Failed to fetch random emoji";
@@ -42,40 +52,70 @@ function addEmojiToReactionList(emojiHtml, emojiName, reactionType) {
   list.appendChild(listItem);
 }
 
+// Client-side code
 document.getElementById("like").addEventListener("click", function () {
   const emojiHtml = document
     .getElementById("emojiDisplay")
     .getAttribute("data-current-emoji");
-  const emojiName = document
-    .getElementById("emojiDisplay")
-    .getAttribute("data-current-name");
-  sendEmojiReaction(emojiName, "like");
-  addEmojiToReactionList(emojiHtml, emojiName, "Liked");
+
+  if (!emojiHtml) {
+    console.error("Emoji HTML is missing.");
+    return;
+  }
+
+  sendEmojiReaction(emojiHtml, "like").then(() => {
+    addEmojiToReactionList(emojiHtml, "Liked");
+  });
 });
 
 document.getElementById("dislike").addEventListener("click", function () {
   const emojiHtml = document
     .getElementById("emojiDisplay")
     .getAttribute("data-current-emoji");
-  const emojiName = document
-    .getElementById("emojiDisplay")
-    .getAttribute("data-current-name");
-  sendEmojiReaction(emojiName, "dislike");
-  addEmojiToReactionList(emojiHtml, emojiName, "Disliked");
+
+  if (!emojiHtml) {
+    console.error("Emoji HTML is missing.");
+    return;
+  }
+
+  sendEmojiReaction(emojiHtml, "dislike").then(() => {
+    addEmojiToReactionList(emojiHtml, "Disliked");
+  });
 });
 
 async function sendEmojiReaction(emojiHtml, reactionType) {
   try {
     const response = await fetch("/emoji-reaction", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emojiHtml, reactionType }),
     });
-    if (!response.ok) throw new Error("Failed to send reaction");
-    console.log(`Reaction ${reactionType} sent for ${emojiHtml}`);
+
+    if (!response.ok) {
+      const errorResponse = await response.text();
+      throw new Error("Failed to send reaction: " + errorResponse);
+    }
+
+    const data = await response.json();
+    console.log("Reaction sent successfully:", data.message);
+
+    updateEmojiUsage(data.emoji_id);
   } catch (error) {
-    console.error("Error sending reaction:", error);
+    console.error("Error sending reaction:", error.message);
+  }
+}
+
+async function updateEmojiUsage(emojiId) {
+  try {
+    const response = await fetch("/update-usage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emojiId }),
+    });
+
+    const data = await response.json();
+    console.log("Usage updated:", data);
+  } catch (error) {
+    console.error("Error updating usage:", error);
   }
 }

@@ -12,7 +12,7 @@ model Emoji {
   name          String
   category      String
   group         String
-  html_code     String
+  html_code     String   @unique
   unicode       String
   like_count    Int      @default(0)
   dislike_count Int      @default(0)
