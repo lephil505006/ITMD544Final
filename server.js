@@ -124,7 +124,6 @@ app.post("/save-emoji", async (req, res) => {
       },
     });
 
-    // Update usage after emoji is saved
     const usageUpdate = await updateEmojiUsage(emoji.emoji_id);
     console.log("Usage Updated:", usageUpdate);
 

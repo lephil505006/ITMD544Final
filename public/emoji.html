@@ -6,28 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random Emoji Generator</title>
     <style>
-        #reactionList {
-            position: fixed;
-            right: 10px;
-            top: 10px;
-            width: 1000px;
+        #emojiDisplay {
+            min-height: 50px;
+            font-size: 32px;
+            margin: 20px auto;
+            display: block;
         }
 
-        #emojiDisplay {
-            min-height: 50px; 
-            font-size: 32px; 
-            margin-bottom: 10px; 
+        button {
+            margin: 0 10px;
         }
     </style>
 </head>
 
 <body>
     <h1>Random Emoji Generator</h1>
-    <p id="userToken">Token: <span id="tokenDisplay"></span></p>
+    <p>Token: <span id="tokenDisplay"></span></p>
     <button id="generateRandomEmoji">Generate Random Emoji</button>
-    <div id="emojiDisplay"></div>
     <button id="like">Like</button>
     <button id="dislike">Dislike</button>
+    <div id="emojiDisplay"></div>
     <div id="reactionList">
         <h2>Reactions</h2>
         <ul id="reactions"></ul>
