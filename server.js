@@ -217,26 +217,31 @@ app.post("/update-usage", async (req, res) => {
 });
 
 async function updateEmojiUsage(emojiId) {
-  const existingUsage = await prisma.emojiUsage.findUnique({
-    where: { emoji_id: emojiId },
-  });
-
-  if (existingUsage) {
-    return await prisma.emojiUsage.update({
+  console.log(`Attempting to update usage for emoji_id: ${emojiId}`);
+  try {
+    const existingUsage = await prisma.emojiUsage.findUnique({
       where: { emoji_id: emojiId },
-      data: {
-        usage_count: { increment: 1 },
-        last_used_at: new Date(),
-      },
     });
-  } else {
-    return await prisma.emojiUsage.create({
-      data: {
-        emoji_id: emojiId,
-        usage_count: 1,
-        last_used_at: new Date(),
-      },
-    });
+
+    if (existingUsage) {
+      console.log("Existing usage found, incrementing count.");
+      const updatedUsage = await prisma.emojiUsage.update({
+        where: { emoji_id: emojiId },
+        data: { usage_count: { increment: 1 } },
+      });
+      console.log(`Usage updated: ${JSON.stringify(updatedUsage)}`);
+      return updatedUsage;
+    } else {
+      console.log("No existing usage found, creating new record.");
+      const newUsage = await prisma.emojiUsage.create({
+        data: { emoji_id: emojiId, usage_count: 0, last_used_at: new Date() },
+      });
+      console.log(`New usage record created: ${JSON.stringify(newUsage)}`);
+      return newUsage;
+    }
+  } catch (error) {
+    console.error(`Failed to update usage for emoji_id: ${emojiId}`, error);
+    throw error;
   }
 }
 
