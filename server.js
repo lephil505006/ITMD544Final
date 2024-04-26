@@ -137,15 +137,31 @@ app.post("/save-emoji", async (req, res) => {
 app.post("/emoji-reaction", async (req, res) => {
   const { emojiHtml, reactionType, sessionId } = req.body;
 
+  console.log(`Received reaction: ${reactionType} for emoji: ${emojiHtml}`);
+
   try {
     const emoji = await prisma.emoji.findUnique({
       where: { html_code: emojiHtml },
     });
 
     if (!emoji) {
+      console.error("Emoji not found for html code:", emojiHtml);
       return res.status(404).send("Emoji not found");
     }
 
+    console.log(
+      `Updating emoji_id: ${emoji.emoji_id} with reaction: ${reactionType}`
+    );
+
+    const updatedEmoji = await prisma.emoji.update({
+      where: { emoji_id: emoji.emoji_id },
+      data:
+        reactionType === "like"
+          ? { like_count: { increment: 1 } }
+          : { dislike_count: { increment: 1 } },
+    });
+
+    console.log(`Updated emoji: ${JSON.stringify(updatedEmoji)}`);
     const newReaction = await prisma.emojiReaction.create({
       data: {
         emoji_id: emoji.emoji_id,
